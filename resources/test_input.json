@@ -1,0 +1,15 @@
+{
+  "entity" : {
+    "metadata":  {
+      "name":"test", 
+      "namespace" : "default"
+    }, 
+    "entity_class" : "agent" 
+  }, 
+  "check" : {
+    "metadata": {
+      "name":"test"
+    }, 
+    "interval":10
+  } 
+}
