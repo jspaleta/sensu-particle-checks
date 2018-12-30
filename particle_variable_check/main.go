@@ -5,15 +5,33 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-
-	"github.com/sensu/sensu-go/types"
+        "log"
+        "net/http"
+//	"github.com/sensu/sensu-go/types"
 	"github.com/spf13/cobra"
 )
 
 var (
-	foo   string
-	stdin *os.File
+        access_token string 
+	device_id    string
+	product_id   string
+        variable     string
+        urlStr          string
+        verbose bool 
 )
+
+type CoreInfo struct {
+	Name string
+	DeviceID string
+	Connected bool
+	Last_handshake_at string
+        Last_app string
+}
+type ParticleVar struct {
+	Name string
+        Result string
+        CoreInfo CoreInfo
+}
 
 func main() {
 	rootCmd := configureRootCommand()
@@ -30,13 +48,39 @@ func configureRootCommand() *cobra.Command {
 		RunE:  run,
 	}
 
-	cmd.Flags().StringVarP(&foo,
+	cmd.Flags().StringVarP(&device_id,
 		"device",
 		"d",
 		"",
-		"hmm")
+		"Particle Device ID")
 
-	_ = cmd.MarkFlagRequired("foo")
+	_ = cmd.MarkFlagRequired("device")
+
+	cmd.Flags().StringVarP(&access_token,
+		"token",
+		"t",
+		"",
+		"Particle Access Token")
+	_ = cmd.MarkFlagRequired("token")
+
+	cmd.Flags().StringVarP(&variable,
+		"variable",
+		"v",
+		"",
+		"Particle Access Token")
+	_ = cmd.MarkFlagRequired("variable")
+	
+
+	cmd.Flags().StringVarP(&product_id,
+		"product",
+		"p",
+		"",
+		"Optional Particle Product ID")
+
+        cmd.Flags().BoolVar(&verbose,
+		"verbose",
+		false,
+		"Enable verbose output")
 
 	return cmd
 }
@@ -47,36 +91,41 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid argument(s) received")
 	}
 
-	if stdin == nil {
-		stdin = os.Stdin
-	}
-
-	eventJSON, err := ioutil.ReadAll(stdin)
-	if err != nil {
-		return fmt.Errorf("failed to read stdin: %s", err)
-	}
-
-	event := &types.Event{}
-	err = json.Unmarshal(eventJSON, event)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal stdin data: %s", err)
-	}
-
-	if err = event.Validate(); err != nil {
-		return fmt.Errorf("failed to validate event: %s", err)
-	}
-
-	if !event.HasCheck() {
-		return fmt.Errorf("event does not contain check")
-	}
-
-	return exampleAction(event)
+	return particleDevicePing()
 }
 
-func exampleAction(event *types.Event) error {
-	fmt.Printf("hello world: %s\n", foo)
-
-	fmt.Printf("Event Key: %s-%s\n", event.Entity.Name, event.Check.Name)
-
+func particleDevicePing() error {
+        urlStr="https://api.particle.io/v1/"
+        if product_id != "" {
+        urlStr+="products/"+product_id+"/"
+        }         
+        urlStr+="devices/"+device_id+"/"+variable+"?access_token="+access_token
+	if verbose {
+          fmt.Printf("Device:%s Token:%s Variable:%s\n", device_id,access_token,variable)
+          if product_id != "" {
+            fmt.Printf("  Product:%s\n", product_id)
+          }
+          fmt.Printf("  Url:%s\n", urlStr)
+        }
+        MakeRequest(urlStr)
 	return nil
 }
+
+
+func MakeRequest(urlStr string) {
+	resp, err := http.Get(urlStr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}	
+        fmt.Printf("Response: %s\n", body)
+
+        var output ParticleVar 
+        json.Unmarshal([]byte(body), &output)
+        fmt.Printf("Var:%s Val:%s\n", output.Name,output.Result)
+}
+

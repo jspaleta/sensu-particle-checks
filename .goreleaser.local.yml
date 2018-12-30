@@ -29,9 +29,9 @@ builds:
   - # Second Build
     env:
     - CGO_ENABLED=0
-    main: ./particle_event_check/main.go
+    main: ./particle_ping_check/main.go
     # Set the binary output location to bin/ so archive will comply with Sensu Go Asset structure
-    binary: bin/particle_event_check
+    binary: bin/particle_ping_check
     goos:
       - linux
 #      - darwin
