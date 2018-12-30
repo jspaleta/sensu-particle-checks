@@ -1,5 +1,5 @@
 # Sensu Go Particle Checks
-TravisCI: [![TravisCI Build Status](https://travis-ci.org/jspaleta/sensu-particle-checks.svg?branch=master)](https://travis-ci.org/jspaleta/sensu-particle-checks)
+TravisCI: [![TravisCI Build Status](https://travis-ci.com/jspaleta/sensu-particle-checks.svg?branch=master)](https://travis-ci.org/jspaleta/sensu-particle-checks)
 
 Collection of Sensu Agent check commands to interact with Particle Cloud
 
