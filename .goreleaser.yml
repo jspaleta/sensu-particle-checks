@@ -8,10 +8,10 @@ builds:
     binary: bin/particle_variable_metric_check
     goos:
       - darwin
-      - freebsd
+#      - freebsd
       - linux
-      - netbsd
-      - solaris
+#      - netbsd
+#      - solaris
       - windows
     goarch:
       - amd64
@@ -19,8 +19,8 @@ builds:
       - arm
       - arm64
     goarm:
-      - 5
-      - 6
+#      - 5
+#      - 6
       - 7
     ignore:
       # TODO: add freebsd/arm support to gopsutil
@@ -34,10 +34,10 @@ builds:
     binary: bin/particle_ping_check
     goos:
       - darwin
-      - freebsd
+#      - freebsd
       - linux
-      - netbsd
-      - solaris
+#      - netbsd
+#      - solaris
       - windows
     goarch:
       - amd64
@@ -45,8 +45,8 @@ builds:
       - arm
       - arm64
     goarm:
-      - 5
-      - 6
+#      - 5
+#      - 6
       - 7
     ignore:
       # TODO: add freebsd/arm support to gopsutil
