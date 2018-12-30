@@ -5,7 +5,7 @@ builds:
     - CGO_ENABLED=0
     main: ./particle_variable_check/main.go
     # Set the binary output location to bin/ so archive will comply with Sensu Go Asset structure
-    binary: bin/particle_variable_check
+    binary: bin/particle_variable_metric_check
     goos:
       - darwin
       - freebsd
