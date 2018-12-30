@@ -13,13 +13,13 @@ import (
 )
 
 var (
-	access_token string
-	device_id    string
-	product_id   string
+	accessToken string
+	deviceID    string
+	productID   string
 	verbose      bool
 )
 
-type Ping struct {
+type ping struct {
 	Online bool
 	Ok     bool
 }
@@ -41,7 +41,7 @@ func configureRootCommand() *cobra.Command {
 		RunE:  run,
 	}
 
-	cmd.Flags().StringVarP(&device_id,
+	cmd.Flags().StringVarP(&deviceID,
 		"device",
 		"d",
 		"",
@@ -49,14 +49,14 @@ func configureRootCommand() *cobra.Command {
 
 	_ = cmd.MarkFlagRequired("device")
 
-	cmd.Flags().StringVarP(&access_token,
+	cmd.Flags().StringVarP(&accessToken,
 		"access_token",
 		"a",
 		"",
 		"Particle Access Token")
 	_ = cmd.MarkFlagRequired("access_token")
 
-	cmd.Flags().StringVarP(&product_id,
+	cmd.Flags().StringVarP(&productID,
 		"product",
 		"p",
 		"",
@@ -76,27 +76,27 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid argument(s) received")
 	}
 
-	var output Ping
+	var output ping
 	err := particlePing(&output)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Device: %s Online: %v Ok: %v\n", device_id, output.Online,output.Ok)
+	fmt.Printf("Device: %s Online: %v Ok: %v\n", deviceID, output.Online,output.Ok)
         if ( !( output.Online && output.Ok )) { os.Exit(2) }
 	return err
 }
 
-func particlePing(output *Ping) error {
-	var baseUrlStr string
-	baseUrlStr = "https://api.particle.io/v1/"
-	if product_id != "" {
-		baseUrlStr += "products/" + product_id + "/"
+func particlePing(output *ping) error {
+	var baseURLStr string
+	baseURLStr = "https://api.particle.io/v1/"
+	if productID != "" {
+		baseURLStr += "products/" + productID + "/"
 	}
-	baseUrlStr += "devices/" + device_id + "/ping"
+	baseURLStr += "devices/" + deviceID + "/ping"
 	if verbose {
-		fmt.Printf("  Url:%s\n", baseUrlStr)
+		fmt.Printf("  Url:%s\n", baseURLStr)
 	}
-	body, err := MakeRequest(baseUrlStr, access_token)
+	body, err := makeRequest(baseURLStr, accessToken)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -109,8 +109,8 @@ func particlePing(output *Ping) error {
 	return err
 }
 
-func MakeRequest(urlStr string, access_token string) ([]byte, error) {
-        data := "Bearer "+access_token
+func makeRequest(urlStr string, accessToken string) ([]byte, error) {
+        data := "Bearer "+accessToken
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPut, urlStr, nil)
 	req.Header.Add("Authorization",data)
