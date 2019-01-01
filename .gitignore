@@ -13,6 +13,7 @@
 
 # dep
 vendor/
+Gopkg.lock
 
 # deploy
 bonsai/
