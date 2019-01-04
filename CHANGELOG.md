@@ -7,6 +7,13 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.0.2] - 2019-01-03
+
+### Changes
+-  Treat particle deviceID and access token as security sensitive inputs. Default is to pull them from env, and use cmdline arguments only as an override.
+-  PARTICLE_DEVICEID => --device   
+-  PARTICLE_TOKEN => --access_token  
+
 ## [0.0.1] - 2018-12-29
 
 ### Added
