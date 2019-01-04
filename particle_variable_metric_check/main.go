@@ -16,19 +16,20 @@ var (
 	deviceID    string
 	productID   string
 	metricName  string
-	variable     string
-	timestamp    string
-	timeout      = 60
-	verbose      bool
+	variable    string
+	timestamp   string
+	timeout     = 60
+	verbose     bool
+	dryrun      bool
 )
 
 type coreInfo struct {
-	DeviceID          string
-	ProductID         int    `json:"product_id"`
-	Connected         bool
-	LastHandshakeAt   string `json:"last_handshake_at"`
-	LastApp           string `json:"last_app"`
-	LastHeard         string `json:"last_heard"`
+	DeviceID        string
+	ProductID       int `json:"product_id"`
+	Connected       bool
+	LastHandshakeAt string `json:"last_handshake_at"`
+	LastApp         string `json:"last_app"`
+	LastHeard       string `json:"last_heard"`
 }
 type particleVar struct {
 	Name      string
@@ -43,32 +44,35 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	} else {
-        }
+	}
 }
 
 func configureRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "particle_variable_check",
+		Use:   "particle_variable_metric_check",
 		Short: "Retrieve Particle variable as graphite metric",
 		Long:  `Retrieve Particle string variable and output in graphite plaintext format`,
 		RunE:  run,
 	}
 
+	/* Security related flags:
+	*  Use envvar value as default if flag is not present
+	*  Cannot be marked required
+	*  Manually check to see if set
+	 */
 	cmd.Flags().StringVarP(&deviceID,
 		"device",
 		"d",
-		"",
-		"Particle Device ID")
-
-	_ = cmd.MarkFlagRequired("device")
+		os.Getenv("PARTICLE_DEVICEID"),
+		"Particle Device ID, defaults to PARTICLE_DEVICEID env variable")
 
 	cmd.Flags().StringVarP(&accessToken,
 		"access_token",
 		"a",
-		"",
-		"Particle Access Token")
-	_ = cmd.MarkFlagRequired("access_token")
+		os.Getenv("PARTICLE_TOKEN"),
+		"Particle Access Token, defaults to PARTICLE_TOKEN env variable")
 
+	/* Required flags */
 	cmd.Flags().StringVarP(&variable,
 		"variable",
 		"v",
@@ -76,6 +80,7 @@ func configureRootCommand() *cobra.Command {
 		"Particle Variable name, must hold string value")
 	_ = cmd.MarkFlagRequired("variable")
 
+	/* Optional Flags */
 	cmd.Flags().StringVarP(&timestamp,
 		"timestamp",
 		"t",
@@ -104,6 +109,10 @@ func configureRootCommand() *cobra.Command {
 		"verbose",
 		false,
 		"Enable verbose output")
+	cmd.Flags().BoolVar(&dryrun,
+		"dryrun",
+		false,
+		"Dryrun to check inputs")
 
 	return cmd
 }
@@ -114,23 +123,31 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid argument(s) received")
 	}
 
+	/* Manually check for required security related values*/
+	if deviceID == "" {
+		return fmt.Errorf("Must supply deviceID using --device or PARTICLE_DEVICEID")
+	}
+	if deviceID == "" {
+		return fmt.Errorf("Must supply deviceID using --device or PARTICLE_DEVICEID")
+	}
+
 	var output particleVar
 	if timeout < 0 {
 		timeout = 0
 	}
-	t := time.Now().Unix() 
+	t := time.Now().Unix()
 	err := particleDeviceVariable(&output)
-        if (err != nil) {
-          return nil
-        }
-	if timestamp == "" || timeout == 0 || (int(t) - int(output.Timestamp) ) <= int(timeout) {
+	if err != nil {
+		return nil
+	}
+	if timestamp == "" || timeout == 0 || (int(t)-int(output.Timestamp)) <= int(timeout) {
 		if metricName == "" {
 			metricName, err = os.Hostname()
 			metricName += "." + output.Name
 		}
 		fmt.Printf("%s %s %d\n", metricName, output.Result, output.Timestamp)
 	} else {
-		err = fmt.Errorf("stale variable measurement: %d - %d = %d",int(t),output.Timestamp, int(t)-output.Timestamp)
+		err = fmt.Errorf("stale variable measurement: %d - %d = %d", int(t), output.Timestamp, int(t)-output.Timestamp)
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -140,7 +157,7 @@ func run(cmd *cobra.Command, args []string) error {
 func particleDeviceVariable(output *particleVar) error {
 	var baseURLStr string
 	var variableURLStr string
-        var err error
+	var err error
 	var tout particleVar
 	var body []byte
 
@@ -162,30 +179,36 @@ func particleDeviceVariable(output *particleVar) error {
 		timestampURLStr = baseURLStr + "devices/" + deviceID + "/" + timestamp + "?access_token=" + accessToken
 		var tbody []byte
 		tbody, err = makeRequest(timestampURLStr)
-        	if (err != nil) {
-	  		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	  		os.Exit(2)
-        	}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(2)
+		}
 		if verbose {
 			fmt.Printf("Timestamp Response: %s\n", tbody)
 		}
 		json.Unmarshal([]byte(tbody), &tout)
 	}
 
-	body, err = makeRequest(variableURLStr)
-        if (err != nil) {
-	  fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	  os.Exit(2)
-        }
-	json.Unmarshal([]byte(body), &output)
-
-	if timestamp == "" { 
-        	output.Timestamp = int(time.Now().Unix()) 
-        } else { output.Timestamp, err = strconv.Atoi(tout.Result) }
+	if dryrun {
+		output.Name = variable
+		output.Result = "N/A"
+	} else {
+		body, err = makeRequest(variableURLStr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(2)
+		}
+		json.Unmarshal([]byte(body), &output)
+	}
+	if timestamp == "" {
+		output.Timestamp = int(time.Now().Unix())
+	} else {
+		output.Timestamp, err = strconv.Atoi(tout.Result)
+	}
 	if verbose {
 		fmt.Printf("Response: %s\n", body)
 		fmt.Printf("Var:%s Val:%s Timestamp: %d\n", output.Name, output.Result, output.Timestamp)
-		fmt.Printf("DeviceID:%v LastHeard:%v LastHandshakeAt:%v ProductID: %v\n", output.CoreInfo.DeviceID,output.CoreInfo.LastHeard,output.CoreInfo.LastHandshakeAt,output.CoreInfo.ProductID)
+		fmt.Printf("DeviceID:%v LastHeard:%v LastHandshakeAt:%v ProductID: %v\n", output.CoreInfo.DeviceID, output.CoreInfo.LastHeard, output.CoreInfo.LastHandshakeAt, output.CoreInfo.ProductID)
 	}
 	return err
 }
@@ -193,19 +216,19 @@ func particleDeviceVariable(output *particleVar) error {
 func makeRequest(urlStr string) ([]byte, error) {
 	resp, err := http.Get(urlStr)
 	if err != nil {
-	  	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	  	os.Exit(1)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-	  	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	  	os.Exit(1)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 	if resp.StatusCode != 200 {
-                err = fmt.Errorf("Failed Request %s StatusCode: %v", urlStr,resp.StatusCode)
-	  	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	  	os.Exit(1)
+		err = fmt.Errorf("Failed Request %s StatusCode: %v", urlStr, resp.StatusCode)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 	return body, err
 }

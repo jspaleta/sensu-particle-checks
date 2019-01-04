@@ -16,7 +16,7 @@ var (
 	accessToken string
 	deviceID    string
 	productID   string
-	verbose      bool
+	verbose     bool
 )
 
 type ping struct {
@@ -40,22 +40,24 @@ func configureRootCommand() *cobra.Command {
 		Long:  `Ping Particle device and check to see if its online`,
 		RunE:  run,
 	}
-
+	/* Security related flags:
+	 *  Use envvar value as default if flag is not present
+	 *  Cannot be marked required
+	 *  Manually check to see if set
+	 */
 	cmd.Flags().StringVarP(&deviceID,
 		"device",
 		"d",
-		"",
-		"Particle Device ID")
-
-	_ = cmd.MarkFlagRequired("device")
+		os.Getenv("PARTICLE_DEVICEID"),
+		"Particle Device ID, defaults to PARTICLE_DEVICEID env variable")
 
 	cmd.Flags().StringVarP(&accessToken,
 		"access_token",
 		"a",
-		"",
-		"Particle Access Token")
-	_ = cmd.MarkFlagRequired("access_token")
+		os.Getenv("PARTICLE_TOKEN"),
+		"Particle Access Token, defaults to PARTICLE_TOKEN env variable")
 
+	/* Optional flags */
 	cmd.Flags().StringVarP(&productID,
 		"product",
 		"p",
@@ -76,13 +78,23 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid argument(s) received")
 	}
 
+	/* Manually check for required security related values*/
+	if deviceID == "" {
+		return fmt.Errorf("Must supply deviceID using --device or PARTICLE_DEVICEID")
+	}
+	if deviceID == "" {
+		return fmt.Errorf("Must supply deviceID using --device or PARTICLE_DEVICEID")
+	}
+
 	var output ping
 	err := particlePing(&output)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Device: %s Online: %v Ok: %v\n", deviceID, output.Online,output.Ok)
-        if ( !( output.Online && output.Ok )) { os.Exit(2) }
+	fmt.Printf("Device: %s Online: %v Ok: %v\n", deviceID, output.Online, output.Ok)
+	if !(output.Online && output.Ok) {
+		os.Exit(2)
+	}
 	return err
 }
 
@@ -110,10 +122,10 @@ func particlePing(output *ping) error {
 }
 
 func makeRequest(urlStr string, accessToken string) ([]byte, error) {
-        data := "Bearer "+accessToken
+	data := "Bearer " + accessToken
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPut, urlStr, nil)
-	req.Header.Add("Authorization",data)
+	req.Header.Add("Authorization", data)
 	fmt.Fprintf(os.Stderr, "Header: %v\n", req.Header)
 	if err != nil {
 		// handle error
@@ -131,7 +143,7 @@ func makeRequest(urlStr string, accessToken string) ([]byte, error) {
 	}
 	//hdr := resp.Header
 	if resp.StatusCode != 200 {
-		err = fmt.Errorf("Failed Request %s StatusCode: %v\n%v", urlStr, resp.StatusCode,string(contents))
+		err = fmt.Errorf("Failed Request %s StatusCode: %v\n%v", urlStr, resp.StatusCode, string(contents))
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
