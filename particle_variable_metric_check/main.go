@@ -64,20 +64,20 @@ func configureRootCommand() *cobra.Command {
 		"device",
 		"d",
 		os.Getenv("PARTICLE_DEVICEID"),
-		"Particle Device ID, defaults to PARTICLE_DEVICEID env variable")
+		"required Particle DeviceID, defaults to PARTICLE_DEVICEID env variable")
 
 	cmd.Flags().StringVarP(&accessToken,
 		"access_token",
 		"a",
 		os.Getenv("PARTICLE_TOKEN"),
-		"Particle Access Token, defaults to PARTICLE_TOKEN env variable")
+		"required Particle Access Token, defaults to PARTICLE_TOKEN env variable")
 
 	/* Required flags */
 	cmd.Flags().StringVarP(&variable,
 		"variable",
 		"v",
 		"",
-		"Particle Variable name, must hold string value")
+		"required Particle Variable name, must hold string value")
 	_ = cmd.MarkFlagRequired("variable")
 
 	/* Optional Flags */
@@ -85,34 +85,34 @@ func configureRootCommand() *cobra.Command {
 		"timestamp",
 		"t",
 		"",
-		"Optional Particle Timestamp Variable, must hold string representation of Unix Epoch integer")
+		"optional Particle Timestamp Variable, must hold string representation of Unix Epoch integer")
 
 	cmd.Flags().IntVarP(&timeout,
 		"timeout",
 		"T",
 		60,
-		"Optional particle Metric Timestamp Timeout (seconds)")
+		"optional particle Metric Timestamp Timeout (seconds)")
 
 	cmd.Flags().StringVarP(&productID,
 		"product",
 		"p",
 		"",
-		"Optional Particle Product ID")
+		"optional Particle ProductID, defaults to PARTICLE_PRODUCTID env variable")
 
 	cmd.Flags().StringVarP(&metricName,
 		"metric",
 		"m",
 		"",
-		"Optional Metric Name, if not set will be determined from hostname.variable")
+		"optional metric name, if not set will be determined from hostname.variable")
 
 	cmd.Flags().BoolVar(&verbose,
 		"verbose",
 		false,
-		"Enable verbose output")
+		"enable verbose output")
 	cmd.Flags().BoolVar(&dryrun,
 		"dryrun",
 		false,
-		"Dryrun to check inputs")
+		"dryrun to check inputs")
 
 	return cmd
 }

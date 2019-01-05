@@ -49,25 +49,25 @@ func configureRootCommand() *cobra.Command {
 		"device",
 		"d",
 		os.Getenv("PARTICLE_DEVICEID"),
-		"Particle Device ID, defaults to PARTICLE_DEVICEID env variable")
+		"required Particle DeviceID, defaults to PARTICLE_DEVICEID env variable")
 
 	cmd.Flags().StringVarP(&accessToken,
 		"access_token",
 		"a",
 		os.Getenv("PARTICLE_TOKEN"),
-		"Particle Access Token, defaults to PARTICLE_TOKEN env variable")
+		"required Particle Access Token, defaults to PARTICLE_TOKEN env variable")
 
 	/* Optional flags */
 	cmd.Flags().StringVarP(&productID,
 		"product",
 		"p",
-		"",
-		"Optional Particle Product ID")
+		os.Getenv("PARTICLE_PRODUCTID"),
+		"optional Particle ProductID, defaults to PARTICLE_PRODUCTID env variable")
 
 	cmd.Flags().BoolVar(&verbose,
 		"verbose",
 		false,
-		"Enable verbose output")
+		"enable verbose output")
 
 	return cmd
 }
